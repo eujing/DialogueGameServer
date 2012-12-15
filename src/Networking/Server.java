@@ -39,7 +39,6 @@ public class Server {
 						//Put client on new thread
 						try {
 							threadPool.execute (new ConnectionHandler (clientSocket, msgHandler, clientList));
-							System.out.println ("here");
 						}
 						catch (Exception ex) {
 							System.out.println (ex.getMessage ());
