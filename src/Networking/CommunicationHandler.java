@@ -1,6 +1,8 @@
 package Networking;
 
+import Core.Logger;
 import Core.Message;
+import Core.MessageHandler;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,15 +12,15 @@ public class CommunicationHandler {
 	public String clientName;
 	private ObjectInputStream inFromClient;
 	private ObjectOutputStream outToClient;
-	private ServerMessageHandler msgHandler;
-	private ConnectionListener disconnectable;
+	private MessageHandler msgHandler;
+	private ConnectionListener connListener;
 
-	public CommunicationHandler (ServerMessageHandler msgHandler, String clientName, ObjectInputStream input, ObjectOutputStream output, ConnectionListener disconnectable) {
+	public CommunicationHandler (MessageHandler msgHandler, String clientName, ObjectInputStream input, ObjectOutputStream output, ConnectionListener connListener) {
 		this.clientName = clientName;
 		this.inFromClient = input;
 		this.outToClient = output;
 		this.msgHandler = msgHandler;
-		this.disconnectable = disconnectable;
+		this.connListener = connListener;
 	}
 
 	public final void startListening () {
@@ -31,18 +33,18 @@ public class CommunicationHandler {
 						
 				//HANDLE messages here
 				if ((msg = Message.cast(obj)) != null) {
-					msgHandler.response.get (msg.tag).execute (msg);
+					msgHandler.submitMessage (msg);
 				}
 				else {
-					System.out.println ("Invalid message from " + clientName);
+					Logger.log ("Invalid message from " + clientName);
 				}
 			}
 		}
 		catch (ClassNotFoundException classEx) {
-			System.out.println (classEx.getMessage());
+			Logger.logDebug (classEx.getMessage());
 		}
 		catch (IOException ioEx) {
-			System.out.println (clientName + " disconnected");
+			Logger.log (clientName + " disconnected");
 		}
 		finally {
 			disconnect ();
@@ -55,12 +57,12 @@ public class CommunicationHandler {
 			this.outToClient.flush ();
 		}
 		catch (Exception ex) {
-			System.out.println ("sendData: " + ex.getMessage ());
+			Logger.logDebug ("sendData: " + ex.getMessage ());
 		}
 	}
 
 	public void disconnect () {
 		Thread.currentThread ().interrupt ();
-		this.disconnectable.onDisconnect (this);
+		this.connListener.onDisconnect (this);
 	}
 }

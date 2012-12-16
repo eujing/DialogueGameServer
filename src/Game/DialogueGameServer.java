@@ -1,5 +1,6 @@
 package Game;
 
+import Core.Logger;
 import Networking.Server;
 
 public class DialogueGameServer {
@@ -10,7 +11,7 @@ public class DialogueGameServer {
 			server.startListening ();
 		}
 		catch (Exception ex) {
-			System.out.println ("Main: " + ex.getMessage ());
+			Logger.logDebug ("Main: " + ex.getMessage ());
 		}
 	}
 }

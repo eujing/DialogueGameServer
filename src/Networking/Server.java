@@ -1,5 +1,9 @@
 package Networking;
 
+import Core.Logger;
+import Core.Message;
+import Core.MessageHandler;
+import Core.MessageListener;
 import Game.GameEngine;
 import java.io.*;
 import java.net.*;
@@ -16,7 +20,7 @@ public class Server {
 	private ExecutorService threadPool;
 	private Thread listenThread;
 	private List<CommunicationHandler> clientList;
-	private ServerMessageHandler msgHandler;
+	private MessageHandler msgHandler;
 	private GameEngine gEngine;
 
 	public Server (short port) throws IOException {
@@ -24,30 +28,57 @@ public class Server {
 		this.clientList = Collections.synchronizedList (new ArrayList<CommunicationHandler> ());
 		this.threadPool = Executors.newFixedThreadPool (N_THREADS);
 		this.gEngine = new GameEngine ();
-		this.msgHandler = new ServerMessageHandler (this.clientList, this.gEngine);
-		
+		this.msgHandler = new MessageHandler ();
+
+		this.msgHandler.registerMessageListener ("info", new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				
+			}
+		});
+
+		this.msgHandler.registerMessageListener ("response", new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				for (CommunicationHandler ch : clientList) {
+					ch.sendData (msg.tag, msg);
+				}
+			}
+		});
+
 		//Connection listener
-		this.listenThread = new Thread (new Runnable () {
+		this.listenThread = createListenThread ();
+
+		//Listen for commands
+		createCmdThread ().start ();
+	}
+
+	public void startListening () {
+		this.listenThread.start ();
+	}
+
+	private Thread createListenThread () {
+		return new Thread (new Runnable () {
 			@Override
 			public void run () {
 				try {
-					System.out.println ("Listening for clients...");
+					Logger.log ("Listening for clients...");
 					while (true) {
 						Socket clientSocket = serverSocket.accept ();
-						System.out.println ("Client connecting...");
+						Logger.log ("Client connecting...");
 
 						//Put client on new thread
 						try {
-							threadPool.execute (new ConnectionHandler (clientSocket, msgHandler, clientList));
+							threadPool.execute (new ConnectionHandler (clientSocket, gEngine, msgHandler, clientList));
 						}
 						catch (Exception ex) {
-							System.out.println (ex.getMessage ());
+							Logger.logDebug (ex.getMessage ());
 						}
 					}
 				}
 				catch (SocketException sEx) {
 					//Cleanup
-					System.out.println ("Disconnecting clients...");
+					Logger.log ("Disconnecting clients...");
 					for (CommunicationHandler ch : clientList) {
 						ch.sendData ("exit", "");
 					}
@@ -60,17 +91,18 @@ public class Server {
 
 				}
 				catch (Exception ex) {
-					System.out.println ("Server listenThread: " + ex.getMessage ());
+					Logger.logDebug ("Server listenThread: " + ex.getMessage ());
 				}
 			}
 		});
+	}
 
-		//Listen for commands
-		new Thread (new Runnable () {
+	private Thread createCmdThread () {
+		return new Thread (new Runnable () {
 			private String cmd;
 			private boolean read = true;
 			BufferedReader reader = new BufferedReader (new InputStreamReader (System.in));
-			
+
 			@Override
 			public void run () {
 				try {
@@ -86,7 +118,7 @@ public class Server {
 					}
 				}
 				catch (Exception ex) {
-					System.out.println (ex.getMessage ());
+					Logger.logDebug (ex.getMessage ());
 				}
 				finally {
 					try {
@@ -96,10 +128,6 @@ public class Server {
 					}
 				}
 			}
-		}).start ();
-	}
-
-	public void startListening () {
-		this.listenThread.start ();
+		});
 	}
 }
