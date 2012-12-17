@@ -40,8 +40,9 @@ public class Server {
 		this.msgHandler.registerMessageListener ("response", new MessageListener () {
 			@Override
 			public void messageReceived (Message msg) {
+				Logger.logDebug ("Response received from " + msg.from);
 				for (CommunicationHandler ch : clientList) {
-					ch.sendData (msg.tag, msg);
+					ch.sendData ("response", msg.data);
 				}
 			}
 		});

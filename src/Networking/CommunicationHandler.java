@@ -24,15 +24,14 @@ public class CommunicationHandler {
 	}
 
 	public final void startListening () {
-		Object obj = null;
 		Message msg = null;
 
 		try {
 			while (true) {
-				obj = this.inFromClient.readObject();
-						
+				msg = Message.cast(this.inFromClient.readObject());
+				
 				//HANDLE messages here
-				if ((msg = Message.cast(obj)) != null) {
+				if (msg != null) {
 					msgHandler.submitMessage (msg);
 				}
 				else {
@@ -45,6 +44,7 @@ public class CommunicationHandler {
 		}
 		catch (IOException ioEx) {
 			Logger.log (clientName + " disconnected");
+			Logger.logDebug (ioEx.getMessage () + " " + ioEx.getCause ());
 		}
 		finally {
 			disconnect ();
@@ -53,7 +53,7 @@ public class CommunicationHandler {
 
 	public final void sendData (String tag, Object data) {
 		try {
-			this.outToClient.writeObject(new Message (tag, this.clientName, data));
+			this.outToClient.writeObject(new Message (tag, "Server", data));
 			this.outToClient.flush ();
 		}
 		catch (Exception ex) {
