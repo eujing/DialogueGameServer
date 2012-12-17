@@ -3,6 +3,7 @@ package Networking;
 import Core.Logger;
 import Core.Message;
 import Core.MessageHandler;
+import Core.MessageTag;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -32,7 +33,7 @@ public class CommunicationHandler {
 				
 				//HANDLE messages here
 				if (msg != null) {
-					msgHandler.submitMessage (msg);
+					msgHandler.submitReceivedMessage (msg);
 				}
 				else {
 					Logger.log ("Invalid message from " + clientName);
@@ -51,9 +52,12 @@ public class CommunicationHandler {
 		}
 	}
 
-	public final void sendData (String tag, Object data) {
+	public final void sendData (MessageTag tag, Object data) {
+		this.sendData (new Message (tag, "Server", data));
+	}
+	public final void sendData (Message msg) {
 		try {
-			this.outToClient.writeObject(new Message (tag, "Server", data));
+			this.outToClient.writeObject(msg);
 			this.outToClient.flush ();
 		}
 		catch (Exception ex) {

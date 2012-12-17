@@ -3,7 +3,8 @@ package Networking;
 import Core.Logger;
 import Core.Message;
 import Core.MessageHandler;
-import Game.GameEngine;
+import Core.MessageTag;
+import Game.ServerGameEngine;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,11 +17,11 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 	private List<CommunicationHandler> clientList;
 	private ObjectInputStream inFromClient;
 	private ObjectOutputStream outToClient;
-	private GameEngine gEngine;
+	private ServerGameEngine gEngine;
 	private MessageHandler msgHandler;
 	private CommunicationHandler commHandler;
 
-	public ConnectionHandler (Socket clientSocket, final GameEngine gEngine, MessageHandler msgHandler, List<CommunicationHandler> clientList) throws Exception {
+	public ConnectionHandler (Socket clientSocket, final ServerGameEngine gEngine, MessageHandler msgHandler, List<CommunicationHandler> clientList) throws Exception {
 		this.gEngine = gEngine;
 		this.clientList = clientList;
 		this.msgHandler = msgHandler;
@@ -60,15 +61,18 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 	}
 
 	@Override
-	public void onConnect (CommunicationHandler commHandler) {
+	public void onConnect (CommunicationHandler commHandler) throws Exception {
 		//Add comm handler to list
 		Logger.log ("Registering " + commHandler.clientName + "...");
-		this.gEngine.registerPlayer (commHandler.clientName);
-		this.clientList.add (commHandler);
-		Logger.log (commHandler.clientName + " has connected");
-
-		for (CommunicationHandler ch : clientList) {
-			//ch.sendData ("msg", "Welcome " + commHandler.clientName + "!");
+		boolean registered = this.gEngine.registerPlayer (commHandler.clientName);
+		if (registered) {
+			this.clientList.add (commHandler);
+			Logger.log (commHandler.clientName + " has connected");
+		}
+		else {
+			commHandler.sendData(MessageTag.REJECT, "Game in progress");
+			commHandler.disconnect();
+			throw new Exception ("Attempt to join while game has started");
 		}
 	}
 
@@ -82,6 +86,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 			Logger.logDebug ("onDisconnect: " + ex.getMessage ());
 		}
 		this.clientList.remove (commHandler);
+		this.gEngine.dropPlayer(commHandler.clientName);
 	}
 
 	@Override
