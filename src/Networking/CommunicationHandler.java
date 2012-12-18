@@ -41,7 +41,7 @@ public class CommunicationHandler {
 			}
 		}
 		catch (ClassNotFoundException classEx) {
-			Logger.logDebug (classEx.getMessage());
+			Logger.logDebug (classEx.getMessage() + " " + classEx.getCause ());
 		}
 		catch (IOException ioEx) {
 			Logger.log (clientName + " disconnected");
@@ -53,9 +53,10 @@ public class CommunicationHandler {
 	}
 
 	public final void sendData (MessageTag tag, Object data) {
-		this.sendData (new Message (tag, "Server", data));
+		this.sendData (new Message (tag, "", data));
 	}
 	public final void sendData (Message msg) {
+		msg.from = "Server";
 		try {
 			this.outToClient.writeObject(msg);
 			this.outToClient.flush ();

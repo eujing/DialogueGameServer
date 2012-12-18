@@ -24,109 +24,151 @@ public class Server {
 	private MessageHandler msgHandler;
 	private ServerGameEngine gEngine;
 
-	public Server(short port) throws IOException {
-		this.serverSocket = new ServerSocket(port);
-		this.clientList = Collections.synchronizedList(new ArrayList<CommunicationHandler>());
-		this.threadPool = Executors.newFixedThreadPool(N_THREADS);
-		this.gEngine = new ServerGameEngine();
-		this.msgHandler = new MessageHandler();
+	public Server (short port) throws IOException {
+		this.serverSocket = new ServerSocket (port);
+		this.clientList = Collections.synchronizedList (new ArrayList<CommunicationHandler> ());
+		this.threadPool = Executors.newFixedThreadPool (N_THREADS);
+		this.gEngine = new ServerGameEngine ();
+		this.msgHandler = new MessageHandler ();
 		registerReceivingListeners (this.msgHandler);
 
 		//Connection listener
-		this.listenThread = createListenThread();
+		this.listenThread = createListenThread ();
 
 		//Listen for commands
-		createCmdThread().start();
+		createCmdThread ().start ();
 	}
 
-	public void startListening() {
-		this.listenThread.start();
+	public void startListening () {
+		this.listenThread.start ();
 	}
 
-	private void registerReceivingListeners(MessageHandler msgHandler) {
-		MessageListener defaultReceive = new MessageListener() {
+	private void registerReceivingListeners (MessageHandler msgHandler) {
+		MessageListener defaultReceive = new MessageListener () {
 			@Override
-			public void messageReceived(Message msg) {
+			public void messageReceived (Message msg) {
 				for (CommunicationHandler ch : clientList) {
-					ch.sendData(msg);
+					ch.sendData (msg);
 				}
 			}
 		};
 
-		msgHandler.registerReceiveMessageListener(MessageTag.INFO, new MessageListener() {
+		msgHandler.registerReceiveMessageListener (MessageTag.INFO, new MessageListener () {
 			@Override
-			public void messageReceived(Message msg) {
+			public void messageReceived (Message msg) {
 				//Nothing
 			}
 		});
 
-		msgHandler.registerReceiveMessageListener(MessageTag.RESPONSE, defaultReceive);
-		msgHandler.registerReceiveMessageListener(MessageTag.START_GAME, defaultReceive);
-		msgHandler.registerReceiveMessageListener(MessageTag.STOP_GAME, defaultReceive);
-	}
 
-	private Thread createListenThread() {
-		return new Thread(new Runnable() {
+		msgHandler.registerReceiveMessageListener (MessageTag.STOP_GAME, defaultReceive);
+		msgHandler.registerReceiveMessageListener (MessageTag.START_GAME, new MessageListener () {
 			@Override
-			public void run() {
-				try {
-					Logger.log("Listening for clients...");
-					while (true) {
-						Socket clientSocket = serverSocket.accept();
-						Logger.log("Client connecting...");
-
-						//Put client on new thread
-						try {
-							threadPool.execute(new ConnectionHandler(clientSocket, gEngine, msgHandler, clientList));
-						} catch (Exception ex) {
-							Logger.logDebug(ex.getMessage());
-						}
-					}
-				} catch (SocketException sEx) {
-					//Cleanup
-					Logger.log("Disconnecting clients...");
+			public void messageReceived (Message msg) {
+				gEngine.startGame ();
+				String nextPlayer = gEngine.getNextTurn ();
+				Logger.logDebug ("Current turn: " + nextPlayer);
+				for (CommunicationHandler ch : clientList) {
+					ch.sendData (msg);
+					ch.sendData (MessageTag.CURRENT_TURN, nextPlayer);
+				}
+			}
+		});
+		msgHandler.registerReceiveMessageListener (MessageTag.RESPONSE, new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				if (msg.from.equals (gEngine.getCurrentTurn ())) {
+					String nextPlayer = gEngine.getNextTurn ();
+					Logger.logDebug ("Current turn: " + nextPlayer);
 					for (CommunicationHandler ch : clientList) {
-						ch.sendData(MessageTag.EXIT, "");
+						ch.sendData (msg);
+						ch.sendData (MessageTag.CURRENT_TURN, nextPlayer);
 					}
-					threadPool.shutdown();
-
-					//Disconnect all (will purge list)
-					for (int i = 0; i < clientList.size(); i++) {
-						clientList.get(0).disconnect();
-					}
-
-				} catch (Exception ex) {
-					Logger.logDebug("Server listenThread: " + ex.getMessage());
+				}
+				else {
+					Logger.log ("Not " + msg.from + "'s turn");
+				}
+			}
+		});
+		msgHandler.registerReceiveMessageListener (MessageTag.SKIP_TURN, new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				String nextPlayer = gEngine.getNextTurn ();
+				for (CommunicationHandler ch : clientList) {
+					ch.sendData (MessageTag.CURRENT_TURN, nextPlayer);
 				}
 			}
 		});
 	}
 
-	private Thread createCmdThread() {
-		return new Thread(new Runnable() {
+	private Thread createListenThread () {
+		return new Thread (new Runnable () {
+			@Override
+			public void run () {
+				try {
+					Logger.log ("Listening for clients...");
+					while (true) {
+						Socket clientSocket = serverSocket.accept ();
+						Logger.log ("Client connecting...");
+
+						//Put client on new thread
+						try {
+							threadPool.execute (new ConnectionHandler (clientSocket, gEngine, msgHandler, clientList));
+						}
+						catch (Exception ex) {
+							Logger.logDebug (ex.getMessage ());
+						}
+					}
+				}
+				catch (SocketException sEx) {
+					//Cleanup
+					Logger.log ("Disconnecting clients...");
+					for (CommunicationHandler ch : clientList) {
+						ch.sendData (MessageTag.EXIT, "");
+					}
+					threadPool.shutdown ();
+
+					//Disconnect all (will purge list)
+					for (int i = 0; i < clientList.size (); i++) {
+						clientList.get (0).disconnect ();
+					}
+
+				}
+				catch (Exception ex) {
+					Logger.logDebug ("Server listenThread: " + ex.getMessage ());
+				}
+			}
+		});
+	}
+
+	private Thread createCmdThread () {
+		return new Thread (new Runnable () {
 			private String cmd;
 			private boolean read = true;
-			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+			BufferedReader reader = new BufferedReader (new InputStreamReader (System.in));
 
 			@Override
-			public void run() {
+			public void run () {
 				try {
 					while (read) {
-						cmd = reader.readLine();
+						cmd = reader.readLine ();
 
 						switch (cmd) {
 							case "exit":
-								serverSocket.close();
-								System.exit(0);
+								serverSocket.close ();
+								System.exit (0);
 								break;
 						}
 					}
-				} catch (Exception ex) {
-					Logger.logDebug(ex.getMessage());
-				} finally {
+				}
+				catch (Exception ex) {
+					Logger.logDebug (ex.getMessage ());
+				}
+				finally {
 					try {
-						reader.close();
-					} catch (Exception ex) {
+						reader.close ();
+					}
+					catch (Exception ex) {
 					}
 				}
 			}
