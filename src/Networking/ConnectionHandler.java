@@ -67,6 +67,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 		boolean registered = this.gEngine.registerPlayer (commHandler.clientName);
 		if (registered) {
 			this.clientList.add (commHandler);
+			this.msgHandler.submitSendingMessage (new Message (MessageTag.PLAYER_JOIN, "", commHandler.clientName));
 			Logger.log (commHandler.clientName + " has connected");
 		}
 		else {

@@ -30,6 +30,7 @@ public class Server {
 		this.threadPool = Executors.newFixedThreadPool (N_THREADS);
 		this.gEngine = new ServerGameEngine ();
 		this.msgHandler = new MessageHandler ();
+		registerSendingListeners (this.msgHandler);
 		registerReceivingListeners (this.msgHandler);
 
 		//Connection listener
@@ -42,6 +43,29 @@ public class Server {
 	public void startListening () {
 		this.listenThread.start ();
 	}
+	
+	private void registerSendingListeners (MessageHandler msgHandler) {
+		MessageListener defaultSend = new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				for (CommunicationHandler ch : clientList) {
+					ch.sendData (msg);
+				}
+			}
+		};
+		
+		MessageListener nPlayerUpdate = new MessageListener () {
+			@Override
+			public void messageReceived (Message msg) {
+				for (CommunicationHandler ch : clientList) {
+					ch.sendData (MessageTag.NUMBER_PLAYERS, clientList.size ());
+				}
+			}
+		};
+		
+		msgHandler.registerSendingMessageListener (MessageTag.PLAYER_JOIN, nPlayerUpdate);
+		msgHandler.registerSendingMessageListener (MessageTag.PLAYER_DROP, nPlayerUpdate);
+	}
 
 	private void registerReceivingListeners (MessageHandler msgHandler) {
 		MessageListener defaultReceive = new MessageListener () {
@@ -53,15 +77,8 @@ public class Server {
 			}
 		};
 
-		msgHandler.registerReceiveMessageListener (MessageTag.INFO, new MessageListener () {
-			@Override
-			public void messageReceived (Message msg) {
-				//Nothing
-			}
-		});
-
-
 		msgHandler.registerReceiveMessageListener (MessageTag.STOP_GAME, defaultReceive);
+		
 		msgHandler.registerReceiveMessageListener (MessageTag.START_GAME, new MessageListener () {
 			@Override
 			public void messageReceived (Message msg) {
