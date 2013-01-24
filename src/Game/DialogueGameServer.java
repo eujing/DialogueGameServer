@@ -11,7 +11,7 @@ public class DialogueGameServer {
 			server.startListening ();
 		}
 		catch (Exception ex) {
-			Logger.logDebug ("Main: " + ex.getMessage ());
+			Logger.logException ("DialogueGameServer::Main", ex);
 		}
 	}
 }

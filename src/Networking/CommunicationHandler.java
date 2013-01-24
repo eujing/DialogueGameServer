@@ -41,11 +41,11 @@ public class CommunicationHandler {
 			}
 		}
 		catch (ClassNotFoundException classEx) {
-			Logger.logDebug (classEx.getMessage() + " " + classEx.getCause ());
+			Logger.logException ("CommunicationHandler::startListening", classEx);
 		}
 		catch (IOException ioEx) {
 			Logger.log (clientName + " disconnected");
-			Logger.logDebug (ioEx.getMessage () + " " + ioEx.getCause ());
+			Logger.logException ("CommunicationHandler::startListening", ioEx);
 		}
 		finally {
 			disconnect ();

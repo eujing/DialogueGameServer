@@ -43,7 +43,7 @@ public class Server {
 	public void startListening () {
 		this.listenThread.start ();
 	}
-	
+
 	private void registerSendingListeners (MessageHandler msgHandler) {
 		MessageListener defaultSend = new MessageListener () {
 			@Override
@@ -53,7 +53,7 @@ public class Server {
 				}
 			}
 		};
-		
+
 		MessageListener nPlayerUpdate = new MessageListener () {
 			@Override
 			public void messageReceived (Message msg) {
@@ -62,7 +62,7 @@ public class Server {
 				}
 			}
 		};
-		
+
 		msgHandler.registerSendingMessageListener (MessageTag.PLAYER_JOIN, nPlayerUpdate);
 		msgHandler.registerSendingMessageListener (MessageTag.PLAYER_DROP, nPlayerUpdate);
 	}
@@ -78,7 +78,7 @@ public class Server {
 		};
 
 		msgHandler.registerReceiveMessageListener (MessageTag.STOP_GAME, defaultReceive);
-		
+
 		msgHandler.registerReceiveMessageListener (MessageTag.START_GAME, new MessageListener () {
 			@Override
 			public void messageReceived (Message msg) {
@@ -133,7 +133,7 @@ public class Server {
 							threadPool.execute (new ConnectionHandler (clientSocket, gEngine, msgHandler, clientList));
 						}
 						catch (Exception ex) {
-							Logger.logDebug (ex.getMessage ());
+							Logger.logException ("Server::createListenThread", ex);
 						}
 					}
 				}
@@ -152,7 +152,7 @@ public class Server {
 
 				}
 				catch (Exception ex) {
-					Logger.logDebug ("Server listenThread: " + ex.getMessage ());
+					Logger.logException ("Server::createListenThread", ex);
 				}
 			}
 		});
@@ -179,7 +179,7 @@ public class Server {
 					}
 				}
 				catch (Exception ex) {
-					Logger.logDebug (ex.getMessage ());
+					Logger.logException ("Server::createCmdThread", ex);
 				}
 				finally {
 					try {

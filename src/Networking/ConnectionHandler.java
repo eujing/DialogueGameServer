@@ -32,15 +32,6 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 			this.outToClient.flush ();
 			this.inFromClient = new ObjectInputStream (clientSocket.getInputStream ());
 
-			/*this.msgHandler.registerMessageListener ("info", new MessageListener () {
-			 @Override
-			 public void messageReceived (Message msg) {
-			 commHandler = createCommHandler (msg);
-			 System.out.println ("Registering " + msg.from);
-			 gEngine.registerPlayer ((String) msg.data);
-			 }
-			 });*/
-
 			//Get client info here
 			Logger.logDebug ("Waiting for info...");
 			Message msg = Message.cast (this.inFromClient.readObject ());
@@ -52,7 +43,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 			this.commHandler = createCommHandler (msg);
 		}
 		catch (IOException ex) {
-			Logger.logDebug ("ConnectionHandler: " + ex.getMessage ());
+			Logger.logException ("ConnectionHandler::ConnectionHandler", ex);
 		}
 	}
 
@@ -84,7 +75,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 			this.outToClient.close ();
 		}
 		catch (Exception ex) {
-			Logger.logDebug ("onDisconnect: " + ex.getMessage ());
+			Logger.logException ("ConnectionHandler::onDisconnect", ex);
 		}
 		this.clientList.remove (commHandler);
 		this.gEngine.dropPlayer(commHandler.clientName);
@@ -97,7 +88,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 			this.commHandler.startListening ();
 		}
 		catch (Exception ex) {
-			Logger.logDebug ("ConnectionHandler: " + ex.getMessage ());
+			Logger.logException ("ConnectionHandler::run ", ex);
 		}
 	}
 
