@@ -13,7 +13,6 @@ import java.util.List;
 
 public class ConnectionHandler implements Runnable, ConnectionListener {
 
-	private static final boolean DEBUG = true;
 	private List<CommunicationHandler> clientList;
 	private ObjectInputStream inFromClient;
 	private ObjectOutputStream outToClient;
@@ -58,7 +57,7 @@ public class ConnectionHandler implements Runnable, ConnectionListener {
 		boolean registered = this.gEngine.registerPlayer (commHandler.clientName);
 		if (registered) {
 			this.clientList.add (commHandler);
-			this.msgHandler.submitSendingMessage (new Message (MessageTag.PLAYER_JOIN, "", commHandler.clientName));
+			this.msgHandler.submitSendingMessage (new Message (MessageTag.PLAYER_JOIN, commHandler.clientName, commHandler.clientName));
 			Logger.log (commHandler.clientName + " has connected");
 		}
 		else {

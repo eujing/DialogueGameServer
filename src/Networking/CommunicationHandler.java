@@ -69,6 +69,6 @@ public class CommunicationHandler {
 	public void disconnect () {
 		Thread.currentThread ().interrupt ();
 		this.connListener.onDisconnect (this);
-		msgHandler.submitSendingMessage (new Message (MessageTag.PLAYER_DROP, "", this.clientName));
+		msgHandler.submitSendingMessage (new Message (MessageTag.PLAYER_DROP, this.clientName, this.clientName));
 	}
 }
