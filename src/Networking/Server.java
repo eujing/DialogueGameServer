@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 public class Server {
 
 	private static final int N_THREADS = 10;
+	private short port;
 	private ServerSocket serverSocket;
 	private ExecutorService threadPool;
 	private Thread listenThread;
@@ -25,7 +26,8 @@ public class Server {
 	private ServerGameEngine gEngine;
 
 	public Server (short port) throws IOException {
-		this.serverSocket = new ServerSocket (port);
+		this.port = port;
+		this.serverSocket = new ServerSocket (this.port);
 		this.clientList = Collections.synchronizedList (new ArrayList<CommunicationHandler> ());
 		this.threadPool = Executors.newFixedThreadPool (N_THREADS);
 		this.gEngine = new ServerGameEngine ();
@@ -123,7 +125,7 @@ public class Server {
 			@Override
 			public void run () {
 				try {
-					Logger.log ("Listening for clients...");
+					Logger.log ("Listening for clients on " + port + "...");
 					while (true) {
 						Socket clientSocket = serverSocket.accept ();
 						Logger.log ("Client connecting...");
@@ -186,6 +188,7 @@ public class Server {
 						reader.close ();
 					}
 					catch (Exception ex) {
+						Logger.logException ("Server::createCmdThread", ex);
 					}
 				}
 			}

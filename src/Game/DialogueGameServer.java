@@ -7,7 +7,11 @@ public class DialogueGameServer {
 
 	public static void main (String[] args) {
 		try {
-			Server server = new Server ((short) 3000);
+			short port = 23;
+			if (args.length == 1 && args[0].startsWith ("-port")) {
+				port = Short.parseShort (args[0].replace (" ", "").replace ("-port=", ""));
+			}
+			Server server = new Server ((short) 23);
 			server.startListening ();
 		}
 		catch (Exception ex) {
